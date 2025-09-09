@@ -59,6 +59,7 @@ class EventCfg:
 
 @configclass
 class FrankaCubeStackEnvCfg(StackEnvCfg):
+
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
