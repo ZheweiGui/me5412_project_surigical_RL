@@ -4,6 +4,9 @@
 
 # Isaac Lab
 
+> This fork adds the STAR robot reach task, bounded success-rate evaluation, and a pretrained RSL-RL checkpoint.
+> See [STAR Robot Reach](STAR_README.md) for setup, asset requirements, and reproducible commands.
+
 [![IsaacSim](https://img.shields.io/badge/IsaacSim-5.0.0-silver.svg)](https://docs.isaacsim.omniverse.nvidia.com/latest/index.html)
 [![Python](https://img.shields.io/badge/python-3.11-blue.svg)](https://docs.python.org/3/whatsnew/3.11.html)
 [![Linux platform](https://img.shields.io/badge/platform-linux--64-orange.svg)](https://releases.ubuntu.com/22.04/)

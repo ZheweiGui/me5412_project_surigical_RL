@@ -1,56 +1,49 @@
-#!/bin/bash
-# Star Robot Reach 训练脚本
-# 使用方法: ./train_star_reach.sh [选项]
+#!/usr/bin/env bash
+set -euo pipefail
 
-# 默认参数
-NUM_ENVS=20
-HEADLESS="--headless"
-MAX_ITERATIONS=1000000
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+num_envs=20
+max_iterations=1000
+headless=true
 
-# 解析命令行参数
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --visual)
-            HEADLESS=""
-            shift
-            ;;
+usage() {
+    echo "Usage: $0 [--num_envs N] [--max_iterations N] [--visual]"
+}
+
+while (($#)); do
+    case "$1" in
         --num_envs)
-            NUM_ENVS="$2"
+            num_envs=${2:?"--num_envs requires a value"}
             shift 2
             ;;
         --max_iterations)
-            MAX_ITERATIONS="$2"
+            max_iterations=${2:?"--max_iterations requires a value"}
             shift 2
             ;;
+        --visual)
+            headless=false
+            shift
+            ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
         *)
-            echo "未知参数: $1"
-            echo "使用方法: $0 [--visual] [--num_envs N] [--max_iterations N]"
-            exit 1
+            echo "Unknown argument: $1" >&2
+            usage >&2
+            exit 2
             ;;
     esac
 done
 
-echo "=================================================="
-echo "Star Robot Reach 环境训练"
-echo "=================================================="
-echo "环境数量: $NUM_ENVS"
-echo "最大迭代: $MAX_ITERATIONS"
-echo "可视化模式: $([ -z "$HEADLESS" ] && echo "开启" || echo "关闭")"
-echo "=================================================="
-echo ""
+command=(
+    "$script_dir/isaaclab.sh" -p "$script_dir/scripts/reinforcement_learning/rsl_rl/train.py"
+    --task Isaac-Reach-Star-v0
+    --num_envs "$num_envs"
+    --max_iterations "$max_iterations"
+)
+if [[ $headless == true ]]; then
+    command+=(--headless)
+fi
 
-# 运行训练
-./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py \
-    --task Isaac-Reach-Star-v0 \
-    --num_envs $NUM_ENVS \
-    --max_iterations $MAX_ITERATIONS
-
-echo ""
-echo "训练完成！"
-echo ""
-echo "要查看训练结果，运行:"
-echo "./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/play.py \\"
-echo "    --task Isaac-Reach-Star-Play-v0 \\"
-echo "    --num_envs 32 \\"
-echo "    --load_run <运行文件夹名称>"
-
+"${command[@]}"

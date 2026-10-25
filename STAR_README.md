@@ -1,141 +1,105 @@
-# Star Robot Reach 环境 - 快速开始
+# STAR Robot Reach for Isaac Lab
 
-## 🎯 概述
+本仓库在 Isaac Lab 上增加了 STAR 七轴机械臂与 Endo360 工具的末端位姿跟踪任务，并提供可直接用于推理的 RSL-RL checkpoint。
 
-已为你的 `star.usd` 机器人创建了一个类似 `Isaac-Reach-Franka-v0` 的强化学习环境。
+## 功能
 
-**新环境名称**: `Isaac-Reach-Star-v0`
+- 机器人配置：7 个 `star_joint` 加 1 个 `endo360_joint`，共 8 维动作。
+- 任务环境：`Isaac-Reach-Star-v0`（训练）和 `Isaac-Reach-Star-Play-v0`（评估）。
+- 成功条件：针尖位置误差小于 1 cm，姿态误差小于 10°。
+- 有界评估：支持固定 episode 数、随机种子、并行环境数及自定义阈值。
+- 预训练模型：`checkpoints/star_reach/model_3800.pt`。
 
-## 🚀 快速开始（3 步）
+## 依赖
 
-### 步骤 1: 检查 USD 文件结构
+- Ubuntu 22.04
+- Python 3.11
+- Isaac Sim 5.0（Isaac Lab 主分支也支持兼容的 Isaac Sim 4.5 环境）
+- RSL-RL
+- NVIDIA GPU
+
+先按上游 [Isaac Lab 安装文档](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html) 完成环境配置，并安装本仓库扩展。
+
+## STAR USD 资产
+
+代码通过以下路径加载机器人资产：
+
+```text
+source/isaaclab_assets/isaaclab_assets/robots/star.usd
+```
+
+上游 Isaac Lab 的 `.gitignore` 默认排除 USD 文件，因此仓库不包含本地的 `star.usd`。运行前需将 STAR 资产放到上述路径。当前本地验证使用的资产大小为 28,460,558 字节。
+
+## 快速评估
+
+默认使用仓库内 checkpoint、1 个环境和 10 个 episode：
 
 ```bash
-python inspect_star_usd.py
+./play_with_success_rate.sh
 ```
 
-这个脚本会：
-- ✅ 列出所有关节名称
-- ✅ 列出所有 body/link 名称  
-- ✅ 生成配置建议
-
-### 步骤 2: 更新配置文件
-
-根据 `inspect_star_usd.py` 的输出，更新以下文件：
-
-**A. 机器人配置** - `source/isaaclab_assets/isaaclab_assets/robots/star.py`
-- 设置正确的关节名称和初始位置
-- 配置执行器参数
-
-**B. 环境配置** - `source/isaaclab_tasks/.../reach/config/star/joint_pos_env_cfg.py`
-- 设置末端执行器名称（`END_EFFECTOR_NAME`）
-- 设置关节控制模式
-
-### 步骤 3: 测试和训练
+最小 smoke eval：
 
 ```bash
-# 测试环境
-python test_star_env.py
-
-# 如果测试通过，开始训练
-./train_star_reach.sh
-
-# 或使用自定义参数
-./train_star_reach.sh --num_envs 2048 --visual
+./play_with_success_rate.sh --num_envs 1 --num_episodes 1
 ```
 
-## 📁 创建的文件
+直接调用 Python 入口：
 
-```
-IsaacLab/
-├── source/
-│   ├── isaaclab_assets/isaaclab_assets/robots/
-│   │   └── star.py                           # 机器人资产配置 ⚙️
-│   │
-│   └── isaaclab_tasks/.../reach/config/star/
-│       ├── __init__.py                       # 环境注册 📝
-│       ├── joint_pos_env_cfg.py             # 环境配置 🎮
-│       └── agents/
-│           ├── __init__.py
-│           └── rsl_rl_ppo_cfg.py           # PPO 算法配置 🧠
-│
-├── inspect_star_usd.py                       # USD 检查工具 🔍
-├── test_star_env.py                          # 环境测试脚本 ✅
-├── train_star_reach.sh                       # 训练启动脚本 🚀
-├── STAR_README.md                            # 本文件 📖
-└── STAR_ROBOT_SETUP_GUIDE.md                # 详细指南 📚
-```
-
-## 🎓 训练命令
-
-### 基础训练
 ```bash
-./train_star_reach.sh
+./isaaclab.sh -p scripts/play_with_metrics.py \
+  --task Isaac-Reach-Star-Play-v0 \
+  --checkpoint checkpoints/star_reach/model_3800.pt \
+  --num_envs 1 \
+  --num_episodes 10 \
+  --seed 42 \
+  --headless
 ```
 
-### 带可视化
+可视化策略：
+
 ```bash
-./train_star_reach.sh --visual
+./play_star_reach.sh --visual
 ```
 
-### 自定义参数
+## 训练
+
 ```bash
-./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py \
-    --task Isaac-Reach-Star-v0 \
-    --num_envs 4096 \
-    --headless
+./train_star_reach.sh --num_envs 20 --max_iterations 1000
 ```
 
-### 查看训练结果
-```bash
-./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/play.py \
-    --task Isaac-Reach-Star-Play-v0 \
-    --num_envs 32 \
-    --load_run <运行文件夹>
+训练输出保存在 `logs/rsl_rl/star_reach/`，该目录不会提交到 Git。
+
+## Checkpoint
+
+| 字段 | 值 |
+| --- | --- |
+| 文件 | `checkpoints/star_reach/model_3800.pt` |
+| 大小 | 172,149 字节（约 168.1 KiB） |
+| SHA-256 | `971562d5a1007b00e5e40fbe2fd5a111f1c257550b8ca822092467111f53b16b` |
+| Actor | `31 → 64 → 64 → 8` |
+| Critic | `31 → 64 → 64 → 1` |
+
+`.pt` 文件由仓库现有 `.gitattributes` 使用 Git LFS 管理。克隆后如模型显示为文本指针，请先运行 `git lfs pull`。
+
+## 验证记录
+
+2026-10-25 使用 Isaac Sim 5.0、RTX 4090 D、固定种子 42、1 个环境完成了 2 个 episode 的 headless smoke eval：环境创建、checkpoint 加载、策略推理、指标统计和自动退出均成功，进程退出码为 0。这两个小样本的成功率为 0/2，仅用于验证代码链路，不代表 checkpoint 的正式性能；此前非固定种子的 9 个轻量 episode 中成功 1 次。
+
+## 主要文件
+
+```text
+checkpoints/star_reach/model_3800.pt
+scripts/play_with_metrics.py
+source/isaaclab_assets/isaaclab_assets/robots/star.py
+source/isaaclab_tasks/isaaclab_tasks/manager_based/manipulation/reach/config/star/
+source/isaaclab_tasks/isaaclab_tasks/manager_based/manipulation/reach/mdp/success_metrics.py
+play_star_reach.sh
+play_with_success_rate.sh
+train_star_reach.sh
+test_star_env.py
 ```
 
-## 🔧 需要配置的关键参数
+## 已知运行环境警告
 
-### 在 `star.py` 中：
-- ✏️ 关节名称（`joint_pos`）
-- ✏️ 执行器配置（`actuators`）
-
-### 在 `joint_pos_env_cfg.py` 中：
-- ✏️ 末端执行器名称（`END_EFFECTOR_NAME`）
-- ✏️ 关节名称模式（`joint_names`）
-
-## ❓ 遇到问题？
-
-### 环境无法加载
-1. 检查 `star.usd` 是否在正确位置
-2. 运行 `python inspect_star_usd.py` 检查文件结构
-
-### 关节控制不工作
-1. 确认关节名称与 USD 文件匹配
-2. 检查 `actuators` 配置中的 `joint_names_expr`
-
-### 训练不稳定
-1. 调整执行器的 `stiffness` 和 `damping`
-2. 检查初始关节位置是否合理
-3. 调整 PPO 超参数
-
-## 📚 更多帮助
-
-- **详细配置指南**: 查看 `STAR_ROBOT_SETUP_GUIDE.md`
-- **环境测试**: 运行 `python test_star_env.py`
-- **USD 检查**: 运行 `python inspect_star_usd.py`
-
-## ✅ 配置检查清单
-
-- [ ] 运行 `inspect_star_usd.py` 并记录关节信息
-- [ ] 更新 `star.py` 中的关节配置
-- [ ] 更新 `joint_pos_env_cfg.py` 中的末端执行器名称
-- [ ] 运行 `test_star_env.py` 确认环境正常
-- [ ] 开始训练！
-
----
-
-**祝训练顺利！** 🎉
-
-如有问题，请查看 `STAR_ROBOT_SETUP_GUIDE.md` 获取详细说明。
-
+本地测试中 Isaac Sim 报告重复 Vulkan ICD，以及 `endo360_calibrated`、`endo360_needle`、`star_link_ee` 和 `world` 的质量/惯量属性警告。这些警告未阻止环境创建或 checkpoint 推理，但正式实验前应清理显卡驱动 ICD，并修正 USD 中对应刚体的质量与惯量。
